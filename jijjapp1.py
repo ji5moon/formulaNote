@@ -205,6 +205,8 @@ for tab, subj in zip(tabs, display_subjects):
                         st.session_state.cards[subj].pop(i)
                         st.rerun()
 st.divider()
+import random
+
 st.subheader(":material/school: 학습 모드")
 
 # --- 학습용 상태 초기화 ---
@@ -214,25 +216,27 @@ if "quiz_subject" not in st.session_state:
     st.session_state.quiz_subject = None
 if "quiz_answer_shown" not in st.session_state:
     st.session_state.quiz_answer_shown = False
+if "quiz_card" not in st.session_state:
+    st.session_state.quiz_card = None
+if "quiz_stats" not in st.session_state:
+    st.session_state.quiz_stats = {"correct": 0, "wrong": 0, "total": 0}
 
 # --- 과목 선택 (전체 포함) ---
 if st.session_state.subjects:
     learn_subject = st.selectbox("학습할 과목 선택", ["전체"] + st.session_state.subjects)
 
-    if st.button(":material/quiz: 무작위 문제 뽑기"):
+    # 문제 뽑기 함수
+    def pick_card():
         if learn_subject == "전체":
-            # 모든 카드 합치기
             all_cards = [(subj, f, b, latex_flag) 
                          for subj, cards in st.session_state.cards.items() 
                          for (f, b, latex_flag) in cards]
             if all_cards:
                 subj, f, b, latex_flag = random.choice(all_cards)
-                st.session_state.quiz_index = f"{subj}:{f}"  # 고유 키
+                st.session_state.quiz_index = f"{subj}:{f}"
                 st.session_state.quiz_subject = subj
                 st.session_state.quiz_card = (f, b, latex_flag)
                 st.session_state.quiz_answer_shown = False
-            else:
-                st.warning("저장된 카드가 없습니다.")
         else:
             cards = st.session_state.cards.get(learn_subject, [])
             if cards:
@@ -241,11 +245,12 @@ if st.session_state.subjects:
                 st.session_state.quiz_subject = learn_subject
                 st.session_state.quiz_card = cards[idx]
                 st.session_state.quiz_answer_shown = False
-            else:
-                st.warning("해당 과목에 카드가 없습니다.")
+
+    if st.button(":material/quiz: 무작위 문제 뽑기"):
+        pick_card()
 
     # --- 문제 표시 ---
-    if st.session_state.quiz_subject:
+    if st.session_state.quiz_card:
         f, b, latex_flag = st.session_state.quiz_card
         st.info(f"[{st.session_state.quiz_subject}] 문제: {f}")
 
@@ -260,27 +265,34 @@ if st.session_state.subjects:
             else:
                 st.text(b)
 
-            # 다음 문제 버튼
-            if st.button("다음 문제"):
-                if learn_subject == "전체":
-                    all_cards = [(subj, f, b, latex_flag) 
-                                 for subj, cards in st.session_state.cards.items() 
-                                 for (f, b, latex_flag) in cards]
-                    if all_cards:
-                        subj, f, b, latex_flag = random.choice(all_cards)
-                        st.session_state.quiz_index = f"{subj}:{f}"
-                        st.session_state.quiz_subject = subj
-                        st.session_state.quiz_card = (f, b, latex_flag)
-                        st.session_state.quiz_answer_shown = False
-                        st.rerun()
-                else:
-                    cards = st.session_state.cards.get(learn_subject, [])
-                    if cards:
-                        idx = random.randint(0, len(cards)-1)
-                        st.session_state.quiz_index = idx
-                        st.session_state.quiz_subject = learn_subject
-                        st.session_state.quiz_card = cards[idx]
-                        st.session_state.quiz_answer_shown = False
-                        st.rerun()
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("✅ 맞음"):
+                    st.session_state.quiz_stats["correct"] += 1
+                    st.session_state.quiz_stats["total"] += 1
+                    pick_card()
+                    st.rerun()
+            with col2:
+                if st.button("❌ 틀림"):
+                    st.session_state.quiz_stats["wrong"] += 1
+                    st.session_state.quiz_stats["total"] += 1
+                    pick_card()
+                    st.rerun()
+            with col3:
+                if st.button("⏭️ 건너뛰기"):
+                    pick_card()
+                    st.rerun()
+
+    # --- 성적 요약 ---
+    st.markdown("---")
+    stats = st.session_state.quiz_stats
+    st.subheader(":material/insights: 학습 통계")
+    st.write(f"- 총 시도: {stats['total']}회")
+    st.write(f"- 맞음: {stats['correct']}회")
+    st.write(f"- 틀림: {stats['wrong']}회")
+    if stats["total"] > 0:
+        acc = (stats["correct"] / stats["total"]) * 100
+        st.progress(acc / 100)
+        st.write(f"정답률: **{acc:.1f}%**")
 else:
     st.warning("과목이 없습니다. 먼저 과목을 추가하세요.")
