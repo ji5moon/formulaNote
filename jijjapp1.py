@@ -267,19 +267,19 @@ if st.session_state.subjects:
 
             col1, col2, col3 = st.columns(3)
             with col1:
-                if st.button("✅ 맞음"):
+                if st.button(":material/check: 맞음"):
                     st.session_state.quiz_stats["correct"] += 1
                     st.session_state.quiz_stats["total"] += 1
                     pick_card()
                     st.rerun()
             with col2:
-                if st.button("❌ 틀림"):
+                if st.button(":material/close: 틀림"):
                     st.session_state.quiz_stats["wrong"] += 1
                     st.session_state.quiz_stats["total"] += 1
                     pick_card()
                     st.rerun()
             with col3:
-                if st.button("⏭️ 건너뛰기"):
+                if st.button(":material/fast_forward: 건너뛰기"):
                     pick_card()
                     st.rerun()
 
