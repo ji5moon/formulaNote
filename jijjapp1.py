@@ -204,7 +204,7 @@ for tab, subj in zip(tabs, display_subjects):
                     if st.button(":material/delete:", key=f"del_{subj}_{i}", type="tertiary"):
                         st.session_state.cards[subj].pop(i)
                         st.rerun()
-
+st.divider()
 st.subheader(":material/school: 학습 모드")
 
 # --- 학습용 상태 초기화 ---
