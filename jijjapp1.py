@@ -130,6 +130,33 @@ else:
     st.sidebar.info("등록된 과목이 없습니다.")
 st.sidebar.divider()
 
+import json
+
+st.sidebar.header(":material/save: 저장/불러오기")
+
+# --- 저장 (내보내기) ---
+if st.sidebar.download_button(
+    label=":material/download: 데이터 저장",
+    data=json.dumps({
+        "subjects": st.session_state.subjects,
+        "cards": st.session_state.cards
+    }, ensure_ascii=False, indent=2),
+    file_name="cards.json",
+    mime="application/json"
+):
+    st.sidebar.success("데이터가 cards.json 파일로 저장되었습니다!")
+
+# --- 불러오기 ---
+uploaded_file = st.sidebar.file_uploader("저장된 파일 불러오기", type=["json"])
+if uploaded_file is not None:
+    try:
+        data = json.load(uploaded_file)
+        st.session_state.subjects = data.get("subjects", [])
+        st.session_state.cards = data.get("cards", {})
+        st.sidebar.success("데이터 불러오기 완료!")
+        st.rerun()
+    except Exception as e:
+        st.sidebar.error(f"불러오기 실패: {e}")
 
 # --- 탭별 카드 확인 + 삭제 ---
 st.subheader(":material/view_list: 저장된 카드 확인")
@@ -176,10 +203,3 @@ for tab, subj in zip(tabs, display_subjects):
                     if st.button(":material/delete:", key=f"del_{subj}_{i}", type="tertiary"):
                         st.session_state.cards[subj].pop(i)
                         st.rerun()
-
-
-#[theme]
-#base="dark"
-#primaryColor="#487bd8"
-#secondaryBackgroundColor="#393946"
-#이거 넣기
