@@ -1,4 +1,5 @@
 import streamlit as st
+import random
 
 # --- 페이지 설정 ---
 st.set_page_config("공식 노트", page_icon='💾')
@@ -203,3 +204,83 @@ for tab, subj in zip(tabs, display_subjects):
                     if st.button(":material/delete:", key=f"del_{subj}_{i}", type="tertiary"):
                         st.session_state.cards[subj].pop(i)
                         st.rerun()
+
+st.subheader(":material/school: 학습 모드")
+
+# --- 학습용 상태 초기화 ---
+if "quiz_index" not in st.session_state:
+    st.session_state.quiz_index = None
+if "quiz_subject" not in st.session_state:
+    st.session_state.quiz_subject = None
+if "quiz_answer_shown" not in st.session_state:
+    st.session_state.quiz_answer_shown = False
+
+# --- 과목 선택 (전체 포함) ---
+if st.session_state.subjects:
+    learn_subject = st.selectbox("학습할 과목 선택", ["전체"] + st.session_state.subjects)
+
+    if st.button(":material/quiz: 무작위 문제 뽑기"):
+        if learn_subject == "전체":
+            # 모든 카드 합치기
+            all_cards = [(subj, f, b, latex_flag) 
+                         for subj, cards in st.session_state.cards.items() 
+                         for (f, b, latex_flag) in cards]
+            if all_cards:
+                subj, f, b, latex_flag = random.choice(all_cards)
+                st.session_state.quiz_index = f"{subj}:{f}"  # 고유 키
+                st.session_state.quiz_subject = subj
+                st.session_state.quiz_card = (f, b, latex_flag)
+                st.session_state.quiz_answer_shown = False
+            else:
+                st.warning("저장된 카드가 없습니다.")
+        else:
+            cards = st.session_state.cards.get(learn_subject, [])
+            if cards:
+                idx = random.randint(0, len(cards)-1)
+                st.session_state.quiz_index = idx
+                st.session_state.quiz_subject = learn_subject
+                st.session_state.quiz_card = cards[idx]
+                st.session_state.quiz_answer_shown = False
+            else:
+                st.warning("해당 과목에 카드가 없습니다.")
+
+    # --- 문제 표시 ---
+    if st.session_state.quiz_subject:
+        f, b, latex_flag = st.session_state.quiz_card
+        st.info(f"[{st.session_state.quiz_subject}] 문제: {f}")
+
+        if not st.session_state.quiz_answer_shown:
+            if st.button("정답 보기"):
+                st.session_state.quiz_answer_shown = True
+                st.rerun()
+        else:
+            st.success("정답:")
+            if latex_flag:
+                st.latex(b)
+            else:
+                st.text(b)
+
+            # 다음 문제 버튼
+            if st.button("다음 문제"):
+                if learn_subject == "전체":
+                    all_cards = [(subj, f, b, latex_flag) 
+                                 for subj, cards in st.session_state.cards.items() 
+                                 for (f, b, latex_flag) in cards]
+                    if all_cards:
+                        subj, f, b, latex_flag = random.choice(all_cards)
+                        st.session_state.quiz_index = f"{subj}:{f}"
+                        st.session_state.quiz_subject = subj
+                        st.session_state.quiz_card = (f, b, latex_flag)
+                        st.session_state.quiz_answer_shown = False
+                        st.rerun()
+                else:
+                    cards = st.session_state.cards.get(learn_subject, [])
+                    if cards:
+                        idx = random.randint(0, len(cards)-1)
+                        st.session_state.quiz_index = idx
+                        st.session_state.quiz_subject = learn_subject
+                        st.session_state.quiz_card = cards[idx]
+                        st.session_state.quiz_answer_shown = False
+                        st.rerun()
+else:
+    st.warning("과목이 없습니다. 먼저 과목을 추가하세요.")
